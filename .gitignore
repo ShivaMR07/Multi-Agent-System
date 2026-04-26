@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual Environments
+venv/
+env/
+.env/
+.venv/
+ENV/
+
+# Environment Variables (SECRETS — NEVER COMMIT)
+.env
+.env.local
+.env.*
+*.env
+
+# API Keys & Config
+config.json
+secrets.json
+credentials.json
+
+# LangChain / LangGraph Cache
+.langchain/
+langchain_cache/
+.cache/
+
+# Output / Generated Files
+output/
+outputs/
+generated/
+*.md.out
+*.txt.out
+
+# Logs
+*.log
+logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Misc
+*.bak
+*.tmp
+*.swp
