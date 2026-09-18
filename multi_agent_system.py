@@ -84,12 +84,20 @@ class _KeywordMockChatModel(BaseChatModel):
   def _generate(self, messages, stop=None, run_manager=None, **kwargs):
     from langchain_core.outputs import ChatGeneration, ChatResult
 
-    text = ""
+    # Identify the calling agent from the SYSTEM message only. Scanning the
+    # full concatenated prompt (system + human) is unreliable because each
+    # agent's human prompt embeds the *previous* agent's output as context
+    # (e.g. the itinerary prompt includes a "--- DESTINATION RESEARCH ---"
+    # block), which would otherwise false-match an earlier agent's keywords.
+    system_text = ""
     for msg in messages:
-      content = getattr(msg, "content", "") or ""
-      if isinstance(content, list):
-        content = " ".join(str(part) for part in content)
-      text += str(content).lower()
+      if isinstance(msg, SystemMessage):
+        content = getattr(msg, "content", "") or ""
+        if isinstance(content, list):
+          content = " ".join(str(part) for part in content)
+        system_text += str(content).lower()
+
+    text = system_text
 
     if "travel researcher" in text or "destination research" in text:
       body = (
@@ -205,7 +213,7 @@ def _latest(items: list[str], default: str = "N/A") -> str:
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  AGENT  ① — COORDINATOR  (validation + routing metadata)
-# ═════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 
 def coordinator_agent(state: TravelState) -> dict:
@@ -629,9 +637,10 @@ def build_initial_state(
   )
 
 
-def parse_cli_args(argv: list[str] | None = None) -> tuple[TravelState, bool] | None:
+def parse_cli_args(argv: list[str] | None = None) -> tuple[TravelState | None, bool]:
   """
-  Parse CLI flags. Returns None when no trip flags were passed (full interactive mode).
+  Parse CLI flags. Returns (state, save_to_file); state is None when no trip
+  flags were passed (full interactive mode).
   Supports partial flags mixed with prompts when --interactive is set.
   """
   parser = argparse.ArgumentParser(
@@ -668,7 +677,7 @@ def parse_cli_args(argv: list[str] | None = None) -> tuple[TravelState, bool] | 
   )
 
   if not has_any and not args.interactive:
-    return None
+    return None, not args.no_save
 
   if args.interactive or not all(
     [args.destination, args.duration, args.budget, args.style, args.travelers is not None]
@@ -700,10 +709,10 @@ def get_user_input(argv: list[str] | None = None) -> tuple[TravelState, bool]:
   Resolve user input from CLI flags or interactive prompts.
   Returns (state, save_to_file).
   """
-  parsed = parse_cli_args(argv)
-  if parsed is None:
-    return collect_interactive_input(), True
-  return parsed
+  state, save_to_file = parse_cli_args(argv)
+  if state is None:
+    return collect_interactive_input(), save_to_file
+  return state, save_to_file
 
 
 # ══════════════════════════════════════════════════════════════════════════════
